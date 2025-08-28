@@ -185,7 +185,8 @@ export default {
 				proxyPort = port || proxyPort;
 			}
 
-			socks5 = url.searchParams.get('SOCKS5') || SOCKS5 || socks5;
+                        // Support both upper and lower case query parameters for SOCKS5 configuration
+                        socks5 = url.searchParams.get('SOCKS5') || url.searchParams.get('socks5') || SOCKS5 || socks5;
 			parsedSocks5 = await parseSocks5FromUrl(socks5, url);
 			if (parsedSocks5) {
 				socks5Enable = true;
@@ -562,13 +563,18 @@ function socks5Parser(socks5) {
 }
 
 async function parseSocks5FromUrl(socks5, url) {
-	if (/\/socks5?=/.test(url.pathname)) {
-		socks5 = url.pathname.split('5=')[1];
-	} else if (/\/socks[5]?:\/\//.test(url.pathname)) {
-		socks5 = url.pathname.split('://')[1].split('#')[0];
-	}
+        const pathname = url.pathname;
+        if (/\/socks5?=/i.test(pathname)) {
+                socks5 = pathname.split(/socks5?=/i)[1];
+        } else if (/\/socks[5]?:\/\//i.test(pathname)) {
+                socks5 = pathname.split(/socks[5]?:\/\//i)[1].split('#')[0];
+        }
 
-	const authIdx = socks5.indexOf('@');
+        if (!socks5) {
+                return null;
+        }
+
+        const authIdx = socks5.indexOf('@');
 	if (authIdx !== -1) {
 		let userPassword = socks5.substring(0, authIdx);
 		const base64Regex = /^(?:[A-Z0-9+/]{4})*(?:[A-Z0-9+/]{2}==|[A-Z0-9+/]{3}=)?$/i;
